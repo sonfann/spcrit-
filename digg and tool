@@ -1,0 +1,94 @@
+-- Maak een ScreenGui
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui")
+ 
+-- Maak een hoofd Frame
+local MainFrame = Instance.new("Frame")
+MainFrame.Parent = ScreenGui
+MainFrame.Size = UDim2.new(0, 220, 0, 150)
+MainFrame.Position = UDim2.new(0.5, -110, 0.1, 0)
+MainFrame.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+MainFrame.BorderSizePixel = 2
+ 
+-- Maak een titel
+local TitleLabel = Instance.new("TextLabel")
+TitleLabel.Parent = MainFrame
+TitleLabel.Size = UDim2.new(1, 0, 0, 20)
+TitleLabel.Position = UDim2.new(0, 0, 0, 0)
+TitleLabel.BackgroundTransparency = 1
+TitleLabel.Text = "Auto Wins"
+TitleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+TitleLabel.TextScaled = true
+ 
+-- Maak een teleport-knop
+local ToggleButton = Instance.new("TextButton")
+ToggleButton.Parent = MainFrame
+ToggleButton.Size = UDim2.new(0, 200, 0, 50)
+ToggleButton.Position = UDim2.new(0, 10, 0, 25)
+ToggleButton.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
+ToggleButton.Text = "Start Teleport"
+ToggleButton.TextScaled = true
+ 
+-- Maak een Close-knop
+local CloseButton = Instance.new("TextButton")
+CloseButton.Parent = MainFrame
+CloseButton.Size = UDim2.new(0, 200, 0, 30)
+CloseButton.Position = UDim2.new(0, 10, 0, 80)
+CloseButton.BackgroundColor3 = Color3.fromRGB(100, 100, 100)
+CloseButton.Text = "Close GUI"
+CloseButton.TextScaled = true
+ 
+-- Maak een label voor "Henkie Frenkie"
+local CreditLabel = Instance.new("TextLabel")
+CreditLabel.Parent = MainFrame
+CreditLabel.Size = UDim2.new(1, 0, 0, 20)
+CreditLabel.Position = UDim2.new(0, 0, 0, 120)
+CreditLabel.BackgroundTransparency = 1
+CreditLabel.Text = "Henkie Frenkie"
+CreditLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
+CreditLabel.TextScaled = true
+CreditLabel.TextSize = 12
+ 
+-- Teleport locaties
+local locations = {
+    Vector3.new(9154.2353515625, 6910, 123.21540069580078),
+    Vector3.new(4373.23486328125, 6910, 123.21540069580078),
+    Vector3.new(-5021.3564453125, 6910, -147.51126098632812),
+    Vector3.new(-70.1651611328125, 6910, -0.184600830078125)
+}
+ 
+-- Variabelen
+local teleportActive = false
+local teleportIndex = 1
+ 
+-- Functie om teleporteren te starten/stoppen
+local function toggleTeleport()
+    teleportActive = not teleportActive
+    ToggleButton.Text = teleportActive and "Stop Teleport" or "Start Teleport"
+    ToggleButton.BackgroundColor3 = teleportActive and Color3.fromRGB(0, 255, 0) or Color3.fromRGB(255, 0, 0)
+ 
+    if teleportActive then
+        spawn(function()
+            while teleportActive do
+                local player = game.Players.LocalPlayer
+                if player and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+                    player.Character.HumanoidRootPart.CFrame = CFrame.new(locations[teleportIndex])
+                end
+ 
+                -- Ga naar de volgende locatie (en opnieuw beginnen als het de laatste was)
+                teleportIndex = teleportIndex % #locations + 1
+ 
+                wait(1) -- 1 seconde delay tussen teleports
+            end
+        end)
+    end
+end
+ 
+-- Functie om GUI te sluiten
+local function closeGUI()
+    ScreenGui.Enabled = false
+end
+ 
+-- Koppel functies aan knoppen
+ToggleButton.MouseButton1Click:Connect(toggleTeleport)
+CloseButton.MouseButton1Click:Connect(closeGUI)
