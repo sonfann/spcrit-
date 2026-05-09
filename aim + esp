@@ -1,0 +1,305 @@
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+local player = Players.LocalPlayer
+local camera = workspace.CurrentCamera
+
+
+local espEnabled = false
+local autoLockEnabled = false
+local fovVisible = true
+local fovRadius = 150 -- Bán kính vòng tròn (2D Screen)
+local maxDistance = 50 -- Giới hạn khoảng cách ngắm (3D World - Studs)
+
+-- ==========================================
+
+local mainGui = Instance.new("ScreenGui")
+mainGui.Name = "SmartLockGui"
+mainGui.Parent = player:WaitForChild("PlayerGui")
+mainGui.ResetOnSpawn = false
+
+local frame = Instance.new("Frame", mainGui)
+frame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+frame.Position = UDim2.new(0.5, -100, 0, 20)
+frame.Size = UDim2.new(0, 200, 0, 210) -- Kéo dài frame ra để chứa thêm nút
+frame.Active = true
+frame.Draggable = true
+
+local title = Instance.new("TextLabel", frame)
+title.Size = UDim2.new(1, 0, 0, 20)
+title.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+title.TextColor3 = Color3.new(1, 1, 1)
+title.Text = "SMART LOCK & ESP"
+title.Font = Enum.Font.SourceSansBold
+
+
+local fovLabel = Instance.new("TextLabel", frame)
+fovLabel.Position = UDim2.new(0.05, 0, 0.15, 0)
+fovLabel.Size = UDim2.new(0.4, 0, 0, 25)
+fovLabel.BackgroundTransparency = 1
+fovLabel.TextColor3 = Color3.new(1, 1, 1)
+fovLabel.Text = "Size FOV: " .. fovRadius
+fovLabel.Font = Enum.Font.SourceSansBold
+
+local minusFovBtn = Instance.new("TextButton", frame)
+minusFovBtn.Position = UDim2.new(0.5, 0, 0.15, 0)
+minusFovBtn.Size = UDim2.new(0.2, 0, 0, 25)
+minusFovBtn.BackgroundColor3 = Color3.fromRGB(80, 80, 80)
+minusFovBtn.TextColor3 = Color3.new(1, 1, 1)
+minusFovBtn.Text = "-"
+minusFovBtn.Font = Enum.Font.SourceSansBold
+
+local plusFovBtn = Instance.new("TextButton", frame)
+plusFovBtn.Position = UDim2.new(0.75, 0, 0.15, 0)
+plusFovBtn.Size = UDim2.new(0.2, 0, 0, 25)
+plusFovBtn.BackgroundColor3 = Color3.fromRGB(80, 80, 80)
+plusFovBtn.TextColor3 = Color3.new(1, 1, 1)
+plusFovBtn.Text = "+"
+plusFovBtn.Font = Enum.Font.SourceSansBold
+
+
+local distLabel = Instance.new("TextLabel", frame)
+distLabel.Position = UDim2.new(0.05, 0, 0.3, 0)
+distLabel.Size = UDim2.new(0.4, 0, 0, 25)
+distLabel.BackgroundTransparency = 1
+distLabel.TextColor3 = Color3.new(1, 1, 1)
+distLabel.Text = "Max Dist: " .. maxDistance .. "m"
+distLabel.Font = Enum.Font.SourceSansBold
+
+local minusDistBtn = Instance.new("TextButton", frame)
+minusDistBtn.Position = UDim2.new(0.5, 0, 0.3, 0)
+minusDistBtn.Size = UDim2.new(0.2, 0, 0, 25)
+minusDistBtn.BackgroundColor3 = Color3.fromRGB(80, 80, 80)
+minusDistBtn.TextColor3 = Color3.new(1, 1, 1)
+minusDistBtn.Text = "-"
+minusDistBtn.Font = Enum.Font.SourceSansBold
+
+local plusDistBtn = Instance.new("TextButton", frame)
+plusDistBtn.Position = UDim2.new(0.75, 0, 0.3, 0)
+plusDistBtn.Size = UDim2.new(0.2, 0, 0, 25)
+plusDistBtn.BackgroundColor3 = Color3.fromRGB(80, 80, 80)
+plusDistBtn.TextColor3 = Color3.new(1, 1, 1)
+plusDistBtn.Text = "+"
+plusDistBtn.Font = Enum.Font.SourceSansBold
+
+
+local fovToggleBtn = Instance.new("TextButton", frame)
+fovToggleBtn.Position = UDim2.new(0.05, 0, 0.5, 0)
+fovToggleBtn.Size = UDim2.new(0.9, 0, 0, 25)
+fovToggleBtn.BackgroundColor3 = Color3.fromRGB(50, 150, 200)
+fovToggleBtn.TextColor3 = Color3.new(1, 1, 1)
+fovToggleBtn.Text = "Vòng FOV (Phím T): ON"
+fovToggleBtn.Font = Enum.Font.SourceSansBold
+
+local lockBtn = Instance.new("TextButton", frame)
+lockBtn.Position = UDim2.new(0.05, 0, 0.65, 0)
+lockBtn.Size = UDim2.new(0.9, 0, 0, 25)
+lockBtn.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
+lockBtn.TextColor3 = Color3.new(1, 1, 1)
+lockBtn.Text = "Auto-Lock (Phím Q): OFF"
+lockBtn.Font = Enum.Font.SourceSansBold
+
+local espBtn = Instance.new("TextButton", frame)
+espBtn.Position = UDim2.new(0.05, 0, 0.8, 0)
+espBtn.Size = UDim2.new(0.9, 0, 0, 25)
+espBtn.BackgroundColor3 = Color3.fromRGB(80, 80, 200)
+espBtn.TextColor3 = Color3.new(1, 1, 1)
+espBtn.Text = "ESP (Phím E): OFF"
+espBtn.Font = Enum.Font.SourceSansBold
+
+
+-- ==========================================
+local fovCircle = Instance.new("Frame", mainGui)
+fovCircle.AnchorPoint = Vector2.new(0.5, 0.5)
+fovCircle.Position = UDim2.new(0.5, 0, 0.5, 0)
+fovCircle.Size = UDim2.new(0, fovRadius * 2, 0, fovRadius * 2)
+fovCircle.BackgroundTransparency = 0.8
+fovCircle.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
+
+local corner = Instance.new("UICorner", fovCircle)
+corner.CornerRadius = UDim.new(1, 0)
+
+
+minusFovBtn.MouseButton1Click:Connect(function()
+    if fovRadius > 50 then
+        fovRadius = fovRadius - 20
+        fovLabel.Text = "Size FOV: " .. fovRadius
+        fovCircle.Size = UDim2.new(0, fovRadius * 2, 0, fovRadius * 2)
+    end
+end)
+
+plusFovBtn.MouseButton1Click:Connect(function()
+    if fovRadius < 500 then
+        fovRadius = fovRadius + 20
+        fovLabel.Text = "Size FOV: " .. fovRadius
+        fovCircle.Size = UDim2.new(0, fovRadius * 2, 0, fovRadius * 2)
+    end
+end)
+
+minusDistBtn.MouseButton1Click:Connect(function()
+    if maxDistance > 10 then
+        maxDistance = maxDistance - 10
+        distLabel.Text = "Max Dist: " .. maxDistance .. "m"
+    end
+end)
+
+plusDistBtn.MouseButton1Click:Connect(function()
+    if maxDistance < 1000 then
+        maxDistance = maxDistance + 10
+        distLabel.Text = "Max Dist: " .. maxDistance .. "m"
+    end
+end)
+
+local function toggleFOV()
+    fovVisible = not fovVisible
+    fovCircle.Visible = fovVisible
+    fovToggleBtn.Text = fovVisible and "Vòng FOV (Phím T): ON" or "Vòng FOV (Phím T): OFF"
+    fovToggleBtn.BackgroundColor3 = fovVisible and Color3.fromRGB(50, 150, 200) or Color3.fromRGB(100, 100, 100)
+end
+fovToggleBtn.MouseButton1Click:Connect(toggleFOV)
+
+
+-- ==========================================
+local function getTargetInFOV()
+    local nearestTarget = nil
+    local shortestDistance2D = fovRadius
+    local screenCenter = Vector2.new(camera.ViewportSize.X / 2, camera.ViewportSize.Y / 2)
+    local myCharacter = player.Character
+
+    if not myCharacter or not myCharacter:FindFirstChild("HumanoidRootPart") then return nil end
+    local myPos = myCharacter.HumanoidRootPart.Position
+
+    for _, p in ipairs(Players:GetPlayers()) do
+        if p ~= player and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
+            local hum = p.Character:FindFirstChild("Humanoid")
+            if hum and hum.Health > 0 then
+                
+                local targetPos = p.Character.HumanoidRootPart.Position
+                
+
+                local dist3D = (targetPos - myPos).Magnitude
+                if dist3D <= maxDistance then
+                    
+
+                    local screenPos, onScreen = camera:WorldToViewportPoint(targetPos)
+                    if onScreen then
+                        local dist2D = (Vector2.new(screenPos.X, screenPos.Y) - screenCenter).Magnitude
+                        if dist2D < shortestDistance2D then
+                            shortestDistance2D = dist2D
+                            nearestTarget = p.Character.HumanoidRootPart
+                        end
+                    end
+                end
+            end
+        end
+    end
+    return nearestTarget
+end
+
+
+local function toggleLock()
+    autoLockEnabled = not autoLockEnabled
+    lockBtn.Text = autoLockEnabled and "Auto-Lock (Phím Q): ON" or "Auto-Lock (Phím Q): OFF"
+    lockBtn.BackgroundColor3 = autoLockEnabled and Color3.fromRGB(50, 200, 50) or Color3.fromRGB(200, 50, 50)
+end
+lockBtn.MouseButton1Click:Connect(toggleLock)
+
+RunService.RenderStepped:Connect(function()
+    if autoLockEnabled then
+        local targetPart = getTargetInFOV()
+        if targetPart then
+            camera.CFrame = CFrame.lookAt(camera.CFrame.Position, targetPart.Position)
+        end
+    end
+end)
+
+
+-- ==========================================
+local function clearESP()
+    for _, p in pairs(Players:GetPlayers()) do
+        if p.Character then
+            if p.Character:FindFirstChild("ESPHighlight") then p.Character.ESPHighlight:Destroy() end
+            if p.Character:FindFirstChild("Head") and p.Character.Head:FindFirstChild("ESPName") then p.Character.Head.ESPName:Destroy() end
+        end
+    end
+end
+
+local function updateESP()
+    for _, p in pairs(Players:GetPlayers()) do
+        if p ~= player and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
+            if not p.Character:FindFirstChild("ESPHighlight") then
+                local highlight = Instance.new("Highlight", p.Character)
+                highlight.Name = "ESPHighlight"
+                highlight.FillColor = Color3.fromRGB(255, 0, 0)
+                highlight.OutlineColor = Color3.fromRGB(255, 255, 255)
+                highlight.FillTransparency = 0.5
+                highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop 
+            end
+            if p.Character:FindFirstChild("Head") and not p.Character.Head:FindFirstChild("ESPName") then
+                local bill = Instance.new("BillboardGui", p.Character.Head)
+                bill.Name = "ESPName"
+                bill.Size = UDim2.new(0, 100, 0, 40)
+                bill.StudsOffset = Vector3.new(0, 3, 0)
+                bill.AlwaysOnTop = true
+                local nameLabel = Instance.new("TextLabel", bill)
+                nameLabel.Size = UDim2.new(1, 0, 1, 0)
+                nameLabel.BackgroundTransparency = 1
+                nameLabel.Text = p.Name
+                nameLabel.TextColor3 = Color3.new(1, 1, 1)
+                nameLabel.TextStrokeTransparency = 0
+                nameLabel.TextScaled = true
+                nameLabel.Font = Enum.Font.SourceSansBold
+            end
+        end
+    end
+end
+
+RunService.Heartbeat:Connect(function()
+    if espEnabled then updateESP() end
+end)
+
+-- Hàm bật tắt ESP
+local function toggleESP()
+    espEnabled = not espEnabled
+    espBtn.Text = espEnabled and "ESP (Phím E): ON" or "ESP (Phím E): OFF"
+    espBtn.BackgroundColor3 = espEnabled and Color3.fromRGB(200, 150, 50) or Color3.fromRGB(80, 80, 200)
+    if not espEnabled then clearESP() end
+end
+espBtn.MouseButton1Click:Connect(toggleESP)
+
+
+-- ==========================================
+local toggleMenuBtn = Instance.new("TextButton", mainGui)
+toggleMenuBtn.Position = UDim2.new(0, 20, 0, 20)
+toggleMenuBtn.Size = UDim2.new(0, 100, 0, 30)
+toggleMenuBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+toggleMenuBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+toggleMenuBtn.Text = "Mở Menu"
+toggleMenuBtn.Font = Enum.Font.SourceSansBold
+toggleMenuBtn.BorderSizePixel = 2
+toggleMenuBtn.BorderColor3 = Color3.fromRGB(255, 255, 255)
+
+frame.Visible = false 
+
+
+local function toggleMenu()
+    frame.Visible = not frame.Visible
+    toggleMenuBtn.Text = frame.Visible and "Đóng Menu" or "Mở Menu"
+    toggleMenuBtn.BackgroundColor3 = frame.Visible and Color3.fromRGB(200, 50, 50) or Color3.fromRGB(40, 40, 40)
+end
+toggleMenuBtn.MouseButton1Click:Connect(toggleMenu)
+
+-- Bắt sự kiện bàn phím
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+    if gameProcessed then return end -- Bỏ qua nếu đang chat
+    
+    if input.KeyCode == Enum.KeyCode.T then
+        toggleMenu() -- Phím R: Ẩn/Hiện bảng Menu
+    elseif input.KeyCode == Enum.KeyCode.Y then
+        toggleFOV()  -- Phím T: Bật/Tắt Vòng tròn FOV
+    elseif input.KeyCode == Enum.KeyCode.Q then
+        toggleLock() -- Phím Q: Bật/Tắt Auto-Lock (Ngắm tự động)
+    elseif input.KeyCode == Enum.KeyCode.I then
+        toggleESP()  -- Phím E: Bật/Tắt ESP (Nhìn xuyên tường)
+    end
+end)
