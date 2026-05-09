@@ -1,0 +1,146 @@
+local CoreGui = game:GetService("CoreGui")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+-- Xóa UI cũ nếu có
+if CoreGui:FindFirstChild("SieuNheUI_V5") then
+    CoreGui.SieuNheUI_V5:Destroy()
+end
+
+-- Tạo Khung Menu Chính
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "SONFAN"
+ScreenGui.Parent = CoreGui
+
+local MainFrame = Instance.new("Frame")
+MainFrame.Parent = ScreenGui
+MainFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+MainFrame.Position = UDim2.new(0, 20, 0, 150)
+MainFrame.Size = UDim2.new(0, 200, 0, 190)
+MainFrame.Active = true
+MainFrame.Draggable = true
+MainFrame.BorderSizePixel = 0
+
+local Title = Instance.new("TextLabel")
+Title.Parent = MainFrame
+Title.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
+Title.Size = UDim2.new(1, 0, 0, 30)
+Title.Font = Enum.Font.GothamBold
+Title.Text = "Mini Hub V5 | Rebirth x10"
+Title.TextColor3 = Color3.fromRGB(255, 255, 255)
+Title.TextSize = 12
+Title.BorderSizePixel = 0
+
+-- Nút Auto Upload
+local UploadBtn = Instance.new("TextButton")
+UploadBtn.Parent = MainFrame
+UploadBtn.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+UploadBtn.Position = UDim2.new(0, 10, 0, 40)
+UploadBtn.Size = UDim2.new(1, -20, 0, 40)
+UploadBtn.Font = Enum.Font.GothamSemibold
+UploadBtn.Text = "Bật Auto Upload"
+UploadBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+UploadBtn.TextSize = 13
+UploadBtn.BorderSizePixel = 0
+
+-- Nút Auto Claim
+local ClaimBtn = Instance.new("TextButton")
+ClaimBtn.Parent = MainFrame
+ClaimBtn.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+ClaimBtn.Position = UDim2.new(0, 10, 0, 90)
+ClaimBtn.Size = UDim2.new(1, -20, 0, 40)
+ClaimBtn.Font = Enum.Font.GothamSemibold
+ClaimBtn.Text = "Bật Auto Claim (Tốc độ cao)"
+ClaimBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+ClaimBtn.TextSize = 12
+ClaimBtn.BorderSizePixel = 0
+
+-- Nút Auto Rebirth
+local RebirthBtn = Instance.new("TextButton")
+RebirthBtn.Parent = MainFrame
+RebirthBtn.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+RebirthBtn.Position = UDim2.new(0, 10, 0, 140)
+RebirthBtn.Size = UDim2.new(1, -20, 0, 40)
+RebirthBtn.Font = Enum.Font.GothamSemibold
+RebirthBtn.Text = "Bật Auto Rebirth (x50)"
+RebirthBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+RebirthBtn.TextSize = 13
+RebirthBtn.BorderSizePixel = 0
+
+-- QUÉT HỆ THỐNG
+local _G_AutoUpload = false
+local _G_AutoClaim = false
+local _G_AutoRebirth = false
+
+local uploadRemotes = {}
+local claimRemotes = {}
+local rebirthRemotes = {}
+
+for _, obj in pairs(ReplicatedStorage:GetDescendants()) do
+    if obj:IsA("RemoteEvent") then
+        local nameLower = string.lower(obj.Name)
+        if string.find(nameLower, "upload") then
+            table.insert(uploadRemotes, obj)
+        elseif string.find(nameLower, "claim") or string.find(nameLower, "collect") then
+            table.insert(claimRemotes, obj)
+        elseif string.find(nameLower, "rebirth") then
+            table.insert(rebirthRemotes, obj)
+        end
+    end
+end
+
+-- Logic chạy Auto Upload
+UploadBtn.MouseButton1Click:Connect(function()
+    _G_AutoUpload = not _G_AutoUpload
+    if _G_AutoUpload then
+        UploadBtn.Text = "Đang Upload..."
+        UploadBtn.BackgroundColor3 = Color3.fromRGB(0, 150, 0)
+        task.spawn(function()
+            while _G_AutoUpload do
+                for _, remote in pairs(uploadRemotes) do pcall(function() remote:FireServer() end) end
+                task.wait(0.5)
+            end
+        end)
+    else
+        UploadBtn.Text = "Bật Auto Upload"
+        UploadBtn.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+    end
+end)
+
+-- Logic chạy Auto Claim
+ClaimBtn.MouseButton1Click:Connect(function()
+    _G_AutoClaim = not _G_AutoClaim
+    if _G_AutoClaim then
+        ClaimBtn.Text = "Đang Bào Tiền..."
+        ClaimBtn.BackgroundColor3 = Color3.fromRGB(0, 150, 0)
+        task.spawn(function()
+            while _G_AutoClaim do
+                for _, remote in pairs(claimRemotes) do pcall(function() remote:FireServer() end) end
+                task.wait(0.1)
+            end
+        end)
+    else
+        ClaimBtn.Text = "Bật Auto Claim"
+        ClaimBtn.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+    end
+end)
+
+-- Logic chạy Auto Rebirth (Đã sửa thành x10)
+RebirthBtn.MouseButton1Click:Connect(function()
+    _G_AutoRebirth = not _G_AutoRebirth
+    if _G_AutoRebirth then
+        RebirthBtn.Text = "Đang Auto Rebirth x10..."
+        RebirthBtn.BackgroundColor3 = Color3.fromRGB(150, 0, 150)
+        task.spawn(function()
+            while _G_AutoRebirth do
+                for _, remote in pairs(rebirthRemotes) do
+                    -- Chuyển tham số truyền vào thành 10
+                    pcall(function() remote:FireServer(50) end)
+                end
+                task.wait(1) -- Để nguyên 1 giây để server kịp xử lý và trừ tiền
+            end
+        end)
+    else
+        RebirthBtn.Text = "Bật Auto Rebirth (x10)"
+        RebirthBtn.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+    end
+end)
